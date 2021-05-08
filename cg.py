@@ -107,6 +107,11 @@ def cg0(C, N, k_max):
 
     return y_old#, r_array, t
 
+def cgnorm(A, N, k_max):
+    y = cg(A, N, k_max)
+    y_max = np.max(np.abs(y))
+    return y/y_max
+
 def cgacc(A, N, k_max = 10, random = False):
     if random:
         c = np.random.normal(size = N**3)
@@ -166,11 +171,12 @@ def cgacc(A, N, k_max = 10, random = False):
 
     return traceT/traceA, traceT, traceA
 
-def cgnorm(A, N, k_max):
-    y = cg(A, N, k_max)
-    y_max = np.max(np.abs(y))
-    return y/y_max
+np.random.seed(1)
 
+x = cgacc(A, 5)
+print(x)
+
+"""
 N = 50
 k_max = 10
 
@@ -179,7 +185,7 @@ theta = cg0(C,N,k_max)
 for i in range(N):
     ggff.plotGFF(theta.reshape((N+2,N+2,N+2))[i],N+2,N+2)
     plt.show()
-"""
+
 print(np.shape(theta[0]))
 
 plt.plot(theta[1])

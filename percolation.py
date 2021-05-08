@@ -37,6 +37,7 @@ for i in range(len(Narr)):
             g1 += gamma(x1, h, N)
             g2 += gamma(x2, h, 2*N)
         Rh[j] = g2/g1
+        print(Rh)
     RhN[i*Nh:(i+1)*Nh] = Rh
 
 harray = 0.13+0.005*np.arange(Nh)

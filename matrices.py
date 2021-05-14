@@ -3,7 +3,7 @@ from numba import jit
 
 #@jit(nopython=True)
 def A(x, N):
-    """Returns the matrix vector product Ax, where A is the periodic boundary precision matrix."""
+    """Returns the matrix vector product Ax, where A is a NxN periodic boundary precision matrix."""
     y = np.zeros(N ** 3)
 
     wx = np.ones(N ** 3)

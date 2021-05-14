@@ -2,11 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cg
 from cluster import *
+import scipy.special as ss
+import genGFFSheffield as ggff
 
 def levelset(x, h):
-    return np.where(x > h, 1, 0)
+    """Gives an array of 0's and 1's, where the sites with a 1 are in the level set above h."""
+    return np.where(x >= h, 1, 0)
 
 def gamma(x, h, N):
+    """Computes the second moment of the cluster size for a given DGFF sample and threshold h."""
     y = levelset(x, h)
     z = cluster(y, N)
     clusterarray = np.bincount(np.bincount(z)[:-1])
@@ -17,60 +21,36 @@ plt.close()
 
 k_max = 7
 Nk = 200 ## Amount of samples made for the average of gamma.
-Nh = 7 ## Amount of cuts h we try.
-Narr = np.array([20]) ## N's to use.
+Narr = np.array([10]) ## N's to use.
+parr = np.array([0.20]) #Cuts we try
+Nh = len(parr) ## Amount of cuts h we try.
 
-RhN = np.zeros(3*Nh)
+RhN = np.zeros(len(Narr)*Nh)
 
 for i in range(len(Narr)):
     N = Narr[i]
     Rh = np.zeros(Nh)
     for j in range(Nh):
-        h = 0.13+0.005*j
         g1 = 0
         g2 = 0
         for k in range(Nk):
-            print("i = ", i, "j = ", j, "k = ", k)
-            x1 = cg.cgnorm(cg.A, N, k_max)
-            x2 = cg.cgnorm(cg.A, 2*N, k_max)
+            x1 = cg.cg(cg.A, N, k_max)
+            x2 = cg.cg(cg.A, 2*N, k_max)
 
-            g1 += gamma(x1, h, N)
-            g2 += gamma(x2, h, 2*N)
+            #x1 = ggff.gen3DGFFSheffield(N,N,N).reshape(N**3)
+            #x2 = ggff.gen3DGFFSheffield(2 * N, 2 * N, 2 * N).reshape((2 * N) ** 3)
+
+            h1 = np.quantile(x1,1-parr[j])
+            h2 = np.quantile(x2,1-parr[j])
+
+            g1 += gamma(x1, h1, N)
+            g2 += gamma(x2, h2, 2*N)
+            if np.mod(k,1) == 0:
+                print("i = ", i, "j = ", j, "k = ", k, "  :  ", g2/g1)
         Rh[j] = g2/g1
         print(Rh)
     RhN[i*Nh:(i+1)*Nh] = Rh
 
-harray = 0.13+0.005*np.arange(Nh)
 for l in range(len(Narr)):
-    plt.plot(harray, RhN[l*Nh:(l+1)*Nh])
+    plt.plot(parr, RhN[l*Nh:(l+1)*Nh])
 plt.show()
-
-
-
-
-
-
-"""
-clustercount = np.zeros(100)
-for k in range(100):
-    print(k)
-    N = int(25)
-    x = np.random.random(N ** 3)
-    h = 0.01*k
-    y = levelset(x, h)
-    z = cluster(y,N)
-    countz = np.bincount(z)
-    clustercount[k] = np.count_nonzero(countz)
-plt.scatter(1-0.01*np.arange(1,101),clustercount)
-plt.show()
-N = 3
-x = np.random.random(N ** 3)
-h = 0.5
-y = levelset(x, h)
-z = cluster(y,N)
-g = gamma(z,N)
-print(y)
-print(z)
-print(np.bincount(z))
-print(g)
-"""

@@ -62,6 +62,7 @@ y = np.zeros(N**3)
 
 #@jit(nopython=True)
 def gibbs(y, N, k_max):
+    """Returns a Gaussian PBC Gibbs sample."""
     wx = 1 #- np.random.random(N ** 3).astype(np.float64)
     wy = 1 #- np.random.random(N ** 3).astype(np.float64)
     wz = 1 #- np.random.random(N ** 3).astype(np.float64)
@@ -109,6 +110,7 @@ def gibbs(y, N, k_max):
 z = np.zeros((N + 2) ** 3)
 
 def gibbs0(z, N, k_max):
+    """Returns a Gaussian ZBC Gibbs sample."""
     wx = 1 #- np.random.random(N ** 3).astype(np.float64)
     wy = 1 #- np.random.random(N ** 3).astype(np.float64)
     wz = 1 #- np.random.random(N ** 3).astype(np.float64)

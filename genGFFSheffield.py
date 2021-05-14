@@ -6,21 +6,38 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import pandas as pd
 
-def l(j,k,m,n):
-    if j+k==2:
+def l2(j,k,m,n):
+    if j+k==0:
         return 0
     else:
-        return 1/np.sqrt((np.sin((j-1)*np.pi/m))**2+(np.sin((k-1)*np.pi/n))**2)
+        return 1/np.sqrt((np.sin(j*np.pi/m))**2+(np.sin(k*np.pi/n))**2)
+
+def l3(j,k,l,m,n,o):
+    if j+k+l==0:
+        return 0
+    else:
+        return 1/np.sqrt((np.sin(j*np.pi/m))**2+(np.sin(k*np.pi/n))**2+(np.sin(l*np.pi/o))**2)
 
 def gen2DGFFSheffield(m,n):
     #table = np.stack([i for i in np.ndindex(m,n)]).reshape(m,n,2)
     table = np.indices((m,n))
-    lvec = np.vectorize(l)
+    lvec = np.vectorize(l2)
     table = lvec(table[0],table[1],m,n)
     Z = np.random.normal(0,1,m*n)+1j*np.random.normal(0,1,m*n)
     Z = Z.reshape(m,n)
     table = np.multiply(table,Z)
     table = np.fft.fft2(table)
+    return np.real(table)
+
+def gen3DGFFSheffield(m,n,o):
+    #table = np.stack([i for i in np.ndindex(m,n)]).reshape(m,n,2)
+    table = np.indices((m,n,o))
+    lvec = np.vectorize(l3)
+    table = lvec(table[0],table[1],table[2],m,n,o)
+    Z = np.random.normal(0,1,m*n*o)+1j*np.random.normal(0,1,m*n*o)
+    Z = Z.reshape(m,n,o)
+    table = np.multiply(table,Z)
+    table = np.fft.fftn(table)
     return np.real(table)
 
 def plotGFF(GZ,m,n):
@@ -37,11 +54,18 @@ def plotGFF(GZ,m,n):
 """
 m = 50
 n = 50
+o = 50
 
-G = gen2DGFFSheffield(m,n)
-print(G)
-plotGFF(G,m,n)
+G2 = gen2DGFFSheffield(m,n)
+print(G2)
+plotGFF(G2,m,n)
 plt.show()
+
+G3 = gen3DGFFSheffield(m,n,o)
+print(G3)
+for i in range(o):
+    plotGFF(G3[i],m,n)
+    plt.show()
 
 H = np.random.normal(0,100,m*n).reshape(m,n)
 plotGFF(H,m,n)

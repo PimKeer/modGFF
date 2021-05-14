@@ -51,7 +51,7 @@ def plotGFF(GZ,L,d):
 
 L = 15
 
-g = genGFF(L,2)
+g = genGFFChafai(L,2)
 print(g)
 print(np.size(g))
 print(np.repeat(np.arange(1,L),L-1))

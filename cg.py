@@ -65,11 +65,14 @@ def cg(A, N, k_max = 10,epsilon=False):
 def cgpf(A, N, epsilon):
     """CG sampler with PBC (variation 2)."""
     b = np.random.normal(size=N ** 3)
+    #b = np.random.binomial(1,0.5,size=N ** 3)*2-1
+    #b /= np.sqrt(np.dot(b,b))
     x_old = np.zeros(N ** 3)
 
     r_old = b - A(x_old, N)
     p_old = r_old
     d_old = np.dot(p_old, A(p_old, N))
+    print(d_old)
     y_old = x_old
 
     k = 1
@@ -77,6 +80,7 @@ def cgpf(A, N, epsilon):
 
     gammalist = []
     dlist = [d_old]
+    rlist = [np.sqrt(np.dot(r_old,r_old))]
 
     while np.dot(r_old,r_old) >= epsilon:
         gamma = np.dot(r_old,r_old)/d_old
@@ -95,6 +99,7 @@ def cgpf(A, N, epsilon):
 
         gammalist.append(gamma)
         dlist.append(d_new)
+        rlist.append(np.sqrt(np.dot(r_new,r_new)))
 
         x_old = x_new
         y_old = y_new
@@ -103,38 +108,52 @@ def cgpf(A, N, epsilon):
         d_old = d_new
         k += 1
 
+    if conjloss == 0:
+        l = k
+
+    print(gammalist)
+    print(dlist)
+
     traceT = 0
-    for j in range(min(l,k)):
-        for i in range(j,l):
-            traceT += gammalist[i] ** 2 * dlist[i] / (gammalist[j] * dlist[j])
+    for j in range(l-1):
+        for i in range(j,l-1):
+            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j]) ** 2
 
     traceA = 0
-    for i in range(min(l,k)):
-        traceA += gammalist[i] ** 2 * dlist[i]
+    for i in range(l-1):
+        traceA += gammalist[i] * rlist[i] ** 2
 
-    return y_old, x_old, traceT, traceA
+    return y_old, x_old, traceT, traceA, b
 """
-N = 10
-epsilon = 1e-2
+N = 2
+epsilon = 1e-4
 M = 10000
 
 mT = 0
 mA = 0
+for m in range(M):
+    y,x,t,a,b = cgpf(I, N, epsilon)
+    mT += t
+    mA += a
+    print(mT/mA)
+
+print(I(x,N))
+print(b)
 
 for m in range(M):
-    y, x, t, a = cgpf(A, N, epsilon)
+    y, x, t, a = cgpf(I, N, epsilon)
     mT += t
     mA += a
     #print(t/a)
     print(m, mT/mA)
 
-z = y - np.mean(y)
-print(z)
+print(y)
 print(x)
 print(t)
+print(t/a)
 
 for i in range(N):
-    ggff.plotGFF(z.reshape((N,N,N))[i],N,N)
+    ggff.plotGFF(y.reshape((N,N,N))[i],N,N)
     plt.show()
 """
 # N=10
@@ -147,20 +166,22 @@ for i in range(N):
 
 def cg0(C, N, k_max, epsilon):
     """CG sampler with ZBC."""
-    c = np.random.normal(size = (N+2)**3)
-    for i in range((N + 2) ** 3):
-        if np.mod(i, N + 2) <= 0 \
-                or np.mod(i, N + 2) >= N + 1 \
-                or np.mod(i, (N + 2) ** 2) <= (N + 2) - 1 \
-                or np.mod(i, (N + 2) ** 2) >= (N + 2) ** 2 - (N + 2) \
-                or np.mod(i, (N + 2) ** 3) <= (N + 2) ** 2 - 1 \
-                or np.mod(i, (N + 2) ** 3) >= (N + 2) ** 3 - (N + 2) ** 2:
-            c[i] = 0
+    #c = np.random.normal(size = (N+2)**3)
+    c = np.random.normal(size=N ** 3)
+    # for i in range((N + 2) ** 3):
+    #     if np.mod(i, N + 2) <= 0 \
+    #             or np.mod(i, N + 2) >= N + 1 \
+    #             or np.mod(i, (N + 2) ** 2) <= (N + 2) - 1 \
+    #             or np.mod(i, (N + 2) ** 2) >= (N + 2) ** 2 - (N + 2) \
+    #             or np.mod(i, (N + 2) ** 3) <= (N + 2) ** 2 - 1 \
+    #             or np.mod(i, (N + 2) ** 3) >= (N + 2) ** 3 - (N + 2) ** 2:
+    #         c[i] = 0
 
     r_old = c
     p_old = r_old
     d_old = np.dot(p_old, C(p_old, N))
-    y_old = np.zeros((N+2)**3)
+    #y_old = np.zeros((N+2)**3)
+    y_old = np.zeros(N** 3)
 
     conjloss = 0
     k=1
@@ -172,12 +193,13 @@ def cg0(C, N, k_max, epsilon):
     #r_array = r0 * np.zeros(k_max+1)
     #t = np.zeros(k_max+1)
 
-    while np.dot(r_old,r_old) >= epsilon or k<=k_max:
-        print(k)
+    while np.dot(r_old,r_old) >= epsilon and k<=k_max:
         gamma = np.dot(r_old,r_old)/d_old
         r_new = r_old - gamma * C(p_old, N)
         beta = - np.dot(r_new,r_new)/(gamma * d_old)
         p_new = r_new - beta * p_old
+
+        print(k, np.linalg.norm(C(p_old, N)))
 
         if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-4 and conjloss == 0:
             print("Loss of conjugacy at iteration ", k)
@@ -210,18 +232,17 @@ def cg0(C, N, k_max, epsilon):
         traceA += gammalist[i] ** 2 * dlist[i]
 
     return y_old, traceT, traceA
-
+"""
 N = 10
 epsilon = 1e-4
-m = 540
+m = 50
 
 mT = 0
 mA = 0
 
-
-y, t, a = cg0(C, N, m, epsilon)
-print(m,t/a)
-
+y, t, a = cg0(I, N, m, epsilon)
+print(m,t,a,t/a)
+"""
 def cgnorm(A, N, k_max):
     y = cg(A, N, k_max)
     mu = np.mean(y)

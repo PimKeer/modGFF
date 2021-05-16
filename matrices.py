@@ -1,6 +1,27 @@
 import numpy as np
 from numba import jit
 
+def I(x, N):
+    y = np.zeros(N**3)
+    for i in range(N ** 3):
+        if np.mod(i,2) == 0:
+            y[i] = x[i]
+        else:
+            y[i] = x[i]
+    return x
+
+def test(x,N):
+    y = np.zeros(8)
+    y[0] = x[0] + 2 * x[1]
+    y[1] = 2 * x[0] + x[1]
+    y[2] = x[0] + 2 * x[2]
+    y[3] = 2 * x[3] + x[1]
+    y[4] = x[4] + 2 * x[1]
+    y[5] = 2 * x[0] + x[5]
+    y[6] = x[7]
+    y[7] = x[6]
+    return y
+
 #@jit(nopython=True)
 def A(x, N):
     """Returns the matrix vector product Ax, where A is a NxN periodic boundary precision matrix."""
@@ -48,6 +69,11 @@ def A(x, N):
 def B(x, N):
     """Returns the matrix vector product Bx, where B is the free boundary precision matrix."""
     y = np.zeros(N ** 3)
+
+    wx = np.ones(N ** 3)
+    wy = np.ones(N ** 3)
+    wz = np.ones(N ** 3)
+
 
     for i in range(N ** 3):
         y[i] = x[i]

@@ -21,8 +21,8 @@ plt.close()
 
 k_max = 7
 Nk = 200 ## Amount of samples made for the average of gamma.
-Narr = np.array([10]) ## N's to use.
-parr = np.array([0.20]) #Cuts we try
+Narr = np.array([5,10,15,20,25,30]) ## N's to use.
+parr = np.array([0.16]) #Cuts we try
 Nh = len(parr) ## Amount of cuts h we try.
 
 RhN = np.zeros(len(Narr)*Nh)
@@ -34,11 +34,11 @@ for i in range(len(Narr)):
         g1 = 0
         g2 = 0
         for k in range(Nk):
-            x1 = cg.cg(cg.A, N, k_max)
-            x2 = cg.cg(cg.A, 2*N, k_max)
+            #x1 = cg.cg(cg.A, N, k_max)
+            #x2 = cg.cg(cg.A, 2*N, k_max)
 
-            #x1 = ggff.gen3DGFFSheffield(N,N,N).reshape(N**3)
-            #x2 = ggff.gen3DGFFSheffield(2 * N, 2 * N, 2 * N).reshape((2 * N) ** 3)
+            x1 = ggff.gen3DGFFSheffield(N,N,N).reshape(N**3)
+            x2 = ggff.gen3DGFFSheffield(2 * N, 2 * N, 2 * N).reshape((2 * N) ** 3)
 
             h1 = np.quantile(x1,1-parr[j])
             h2 = np.quantile(x2,1-parr[j])

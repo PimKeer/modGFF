@@ -30,7 +30,6 @@ def gen2DGFFSheffield(m,n):
     return np.real(table)
 
 def gen3DGFFSheffield(m,n,o):
-    #table = np.stack([i for i in np.ndindex(m,n)]).reshape(m,n,2)
     table = np.indices((m,n,o))
     lvec = np.vectorize(l3)
     table = lvec(table[0],table[1],table[2],m,n,o)
@@ -52,8 +51,8 @@ def plotGFF(GZ,m,n):
     #surf = ax.plot_trisurf(np.repeat(np.arange(1,L),L-1), np.tile(np.arange(1,L),L-1), GZ.flatten(),  cmap=cm.jet, linewidth=0.1)
     fig.colorbar(surf, shrink=0.5, aspect=5)
 """
-m = 50
-n = 50
+m = 200
+n = 200
 o = 50
 
 G2 = gen2DGFFSheffield(m,n)

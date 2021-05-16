@@ -51,6 +51,9 @@ def plotGFF(GZ,L,d):
 
 L = 15
 
+y = genGFFChafai(10,3)
+print(y)
+"""
 g = genGFFChafai(L,2)
 print(g)
 print(np.size(g))
@@ -63,3 +66,4 @@ print(len(g.flatten()))
 print()
 plotGFF(g,L,2)
 plt.show()
+"""

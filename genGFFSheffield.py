@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import pandas as pd
+import scipy.special as ss
 
 def l2(j,k,m,n):
     if j+k==0:
@@ -21,22 +22,23 @@ def l3(j,k,l,m,n,o):
 def gen2DGFFSheffield(m,n):
     #table = np.stack([i for i in np.ndindex(m,n)]).reshape(m,n,2)
     table = np.indices((m,n))
-    lvec = np.vectorize(l2)
-    table = lvec(table[0],table[1],m,n)
+    l2vec = np.vectorize(l2)
+    table = l2vec(table[0],table[1],m,n)
     Z = np.random.normal(0,1,m*n)+1j*np.random.normal(0,1,m*n)
     Z = Z.reshape(m,n)
     table = np.multiply(table,Z)
-    table = np.fft.fft2(table)
+    table = np.fft.ifft2(table)*np.sqrt(m*n)
     return np.real(table)
 
 def gen3DGFFSheffield(m,n,o):
     table = np.indices((m,n,o))
-    lvec = np.vectorize(l3)
-    table = lvec(table[0],table[1],table[2],m,n,o)
+    l3vec = np.vectorize(l3)
+    table = l3vec(table[0],table[1],table[2],m,n,o)
     Z = np.random.normal(0,1,m*n*o)+1j*np.random.normal(0,1,m*n*o)
-    Z = Z.reshape(m,n,o)
+    #Z = np.vectorize(complex)(ss.erfinv(2*np.random.uniform(size=m*n*o)-1),ss.erfinv(2*np.random.uniform(size=m*n*o)-1))
+    Z = Z.reshape((m,n,o))
     table = np.multiply(table,Z)
-    table = np.fft.fftn(table)
+    table = np.fft.ifftn(table)*np.sqrt(m*n*o)
     return np.real(table)
 
 def plotGFF(GZ,m,n):
@@ -51,8 +53,8 @@ def plotGFF(GZ,m,n):
     #surf = ax.plot_trisurf(np.repeat(np.arange(1,L),L-1), np.tile(np.arange(1,L),L-1), GZ.flatten(),  cmap=cm.jet, linewidth=0.1)
     fig.colorbar(surf, shrink=0.5, aspect=5)
 """
-m = 200
-n = 200
+m = 50
+n = 50
 o = 50
 
 G2 = gen2DGFFSheffield(m,n)

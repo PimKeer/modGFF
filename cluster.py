@@ -69,5 +69,3 @@ def cluster(x, N):
 
     labels[x == 0] = N ** 3
     return labels[:-1]
-
-

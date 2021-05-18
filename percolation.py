@@ -17,14 +17,13 @@ def gamma(x, h, N):
     gamma = (clusterarray * np.arange(len(clusterarray))**2).sum()
     return gamma
 
-
 plt.close()
 
 k_max = 7
-Nk = 100 ## Amount of samples made for the average of gamma.
-Narr = np.array([5,10,15,20,25,30]) ## N's to use.
-parr = np.array([0.155,0.16,0.165]) #Cuts we try
-Nh = len(parr) ## Amount of cuts h we try.
+Nk = 200 # Amount of samples made for the average of gamma.
+Narr = np.array([10,20,40]) # N's to use.
+parr = np.array([0.13,0.145,0.16,0.175]) # Cuts we try
+Nh = len(parr) # Amount of cuts h we try.
 
 RhN = np.zeros(len(Narr)*Nh)
 

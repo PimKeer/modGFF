@@ -2,25 +2,22 @@ import numpy as np
 from numba import jit
 
 def I(x, N):
-    y = np.zeros(N**3)
-    for i in range(N ** 3):
-        if np.mod(i,2) == 0:
-            y[i] = x[i]
-        else:
-            y[i] = x[i]
+    # y = np.zeros(N**3)
+    # for i in range(N ** 3):
+    #     if np.mod(i,2) == 0:
+    #         y[i] = x[i]
+    #     else:
+    #         y[i] = x[i]
     return x
 
 def test(x,N):
-    y = np.zeros(8)
-    y[0] = x[0] + 2 * x[1]
-    y[1] = 2 * x[0] + x[1]
-    y[2] = x[0] + 2 * x[2]
-    y[3] = 2 * x[3] + x[1]
-    y[4] = x[4] + 2 * x[1]
-    y[5] = 2 * x[0] + x[5]
-    y[6] = x[7]
-    y[7] = x[6]
-    return y
+    D = 2*np.eye(N**3)+np.eye(N**3, k=1)+np.eye(N**3, k=-1)+3*np.eye(N**3, k=2)+3*np.eye(N**3, k=-2)
+    return D.dot(x)
+
+# N = 2
+# x = np.array([1,2,5,0,3,1,2,0])
+# y =test(x,N)
+# print(y)
 
 #@jit(nopython=True)
 def A(x, N):

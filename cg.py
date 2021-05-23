@@ -232,16 +232,17 @@ def cgpf0acc(C, N, epsilon):
 
     gammalist = []
     dlist = [d_old]
-    rlist = [np.sqrt(np.dot(r_old,r_old))]
+    rlist = [np.linalg.norm(r_old)]
 
-    # while np.dot(r_old,r_old) >= epsilon:
+    # while np.linalg.norm(r_old) >= epsilon:
     while k <= epsilon:
-        # print(np.dot(r_old,r_old))
+        # print(np.linalg.norm(r_old))
         gamma = np.dot(r_old,r_old)/d_old
         x_new = x_old + gamma*p_old
         z = np.random.normal(0,1,size=1)
         y_new = y_old + z*p_old/np.sqrt(d_old)
         r_new = r_old - gamma*C(p_old,N)
+        # print(r_new[2],r_new[N+2],r_new[(N+2)**2+2],r_new[(N+2)**3-N])
         beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
         p_new = r_new-beta*p_old
         d_new = np.dot(p_new,C(p_new,N))
@@ -269,18 +270,85 @@ def cgpf0acc(C, N, epsilon):
     # print(dlist)
     # print(rlist)
     traceT = 0
-    for j in range(l-1):
+    for j in range(0,l-1):
         for i in range(j,l-1):
-            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j]) ** 2
+            # print('T  ', gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2))
+            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2)
     traceA = 0
-    for i in range(l-1):
+    for i in range(0,l-1):
+        # print('A  ', gammalist[i] * rlist[i] ** 2)
         traceA += gammalist[i] * rlist[i] ** 2
     return y_old, x_old , traceT, traceA, b, l
 
-N = 5
-u = np.arange(1,150)
+def cgpfacc(S, N, epsilon):
+    """CG sampler with PBC (variation 2)."""
+
+    b = np.random.normal(size = N**2)
+    x_old = np.zeros(N**2)
+
+    r_old = b - S(x_old, N)
+    p_old = r_old
+    d_old = np.dot(p_old, S(p_old, N))
+    # print(d_old)
+    y_old = x_old
+
+    k = 1
+    conjloss = 0
+
+    gammalist = []
+    dlist = [d_old]
+    rlist = [np.linalg.norm(r_old)]
+
+    # while np.linalg.norm(r_old) >= epsilon:
+    while k <= epsilon:
+        # print(np.dot(r_old,r_old))
+        gamma = np.dot(r_old,r_old)/d_old
+        x_new = x_old + gamma*p_old
+        z = np.random.normal(0,1,size=1)
+        y_new = y_old + z*p_old/np.sqrt(d_old)
+        r_new = r_old - gamma*S(p_old,N)
+        beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
+        p_new = r_new-beta*p_old
+        d_new = np.dot(p_new,S(p_new,N))
+        # print(d_new)
+
+        if np.abs(np.dot(p_new, S(p_old, N))) >= 1e-4 and conjloss == 0:
+            print("loss of conjugacy at iteration: ", k)
+            conjloss = 1
+            l = k
+
+        gammalist.append(gamma)
+        dlist.append(d_new)
+        rlist.append(np.linalg.norm(r_new))
+
+        x_old = x_new
+        y_old = y_new
+        r_old = r_new
+        p_old = p_new
+        d_old = d_new
+        k += 1
+
+    if conjloss == 0:
+        l = k
+
+    # print(gammalist)
+    # print(dlist)
+    # print(rlist)
+    traceT = 0
+    for j in range(0,l-1):
+        for i in range(j,l-1):
+            # print('T  ', gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2))
+            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2)
+    traceA = 0
+    for i in range(0,l-1):
+        # print('A  ', gammalist[i] * rlist[i] ** 2)
+        traceA += gammalist[i] * rlist[i] ** 2
+    return y_old, x_old , traceT, traceA, b, l
+
+N = 10
+u = np.array([1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100])
 epsilon = u
-M = 50
+M = 20
 
 mtma = np.zeros(len(epsilon))
 larr = np.zeros(len(epsilon))
@@ -294,9 +362,9 @@ for i in range(len(epsilon)):
         mT += t
         mA += a
         lav += l
-        print(i, l, mT/mA)
+        print(i, l, mT/mA, t, a)
     mtma[i] = mT/mA
-    larr[i] = l/M
+    larr[i] = lav/M
 
 plt.plot(u,larr)
 plt.show()
@@ -304,7 +372,7 @@ plt.plot(u,mtma)
 plt.show()
 
 for n in range(N+2):
-    ggff.plotGFF(y.reshape((N+2,N+2,N+2))[n],N+2,N+2)
+    ggff.plotGFF(y.reshape(N,N),N,N)
     plt.show()
 
 # print(I(x,N))

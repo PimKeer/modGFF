@@ -167,7 +167,8 @@ def cgpf0(C, N, epsilon = 1e-4):
     k = 1
     conjloss = 0
 
-    while np.dot(r_old,r_old) >= epsilon:
+    # while np.linalg.norm(r_old) >= epsilon:
+    while k <= epsilon:
         # print(np.dot(r_old,r_old))
         gamma = np.dot(r_old,r_old)/d_old
         z = np.random.normal(0,1,size=1)
@@ -190,6 +191,8 @@ def cgpf0(C, N, epsilon = 1e-4):
 
     return y_old
 
+
+
 def cut(x, L, l):
     """Cut the outer l layers from a LxLxL GFF realisation x."""
     x_cut = []
@@ -206,7 +209,17 @@ def cut(x, L, l):
             x_cut.append(x[i])
 
     return np.array(x_cut)
-
+"""
+N = 10
+y = cgpf0(C, N, 300)
+print(y)
+print(cut(y,N+2,1))
+for i in range(N):
+    ggff.plotGFF(y.reshape(N+2,N+2,N+2)[i],N+2,N+2)
+    plt.show()
+    ggff.plotGFF(cut(y,N+2,1).reshape(N, N, N)[i], N, N)
+    plt.show()
+"""
 def cgpf0acc(C, N, epsilon):
     """CG sampler with PBC (variation 2)."""
 
@@ -234,8 +247,8 @@ def cgpf0acc(C, N, epsilon):
     dlist = [d_old]
     rlist = [np.linalg.norm(r_old)]
 
-    # while np.linalg.norm(r_old) >= epsilon:
-    while k <= epsilon:
+    while np.linalg.norm(r_old) >= epsilon:
+    # while k <= epsilon:
         # print(np.linalg.norm(r_old))
         gamma = np.dot(r_old,r_old)/d_old
         x_new = x_old + gamma*p_old
@@ -346,9 +359,9 @@ def cgpfacc(S, N, epsilon):
     return y_old, x_old , traceT, traceA, b, l
 
 N = 10
-u = np.array([1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100])
-epsilon = u
-M = 20
+u = np.array([50,100,150,200,250,300])
+epsilon = float(10) ** (-u)
+M = 5
 
 mtma = np.zeros(len(epsilon))
 larr = np.zeros(len(epsilon))
@@ -372,7 +385,7 @@ plt.plot(u,mtma)
 plt.show()
 
 for n in range(N+2):
-    ggff.plotGFF(y.reshape(N,N),N,N)
+    ggff.plotGFF(y.reshape(N+2,N+2,N+2)[n],N+2,N+2)
     plt.show()
 
 # print(I(x,N))

@@ -42,13 +42,14 @@ def savesqrtG(L):
     xy = np.indices((L - 1, L - 1, L - 1, L - 1, L - 1, L - 1)) + 1
     sG = sqrtGvec(L,xy[0],xy[1],xy[2],xy[3],xy[4],xy[5])
     np.save('gff_sG_'+str(L)+'.npy', sG)
-"""
-for L in range(13,17):
+
+L = 20
+for i in range(1,4):
     start = time.time()
-    savesqrtG(L)
+    savesqrtG(L*i)
     end = time.time()
     print(end-start)
-
+"""
 L=100
 start1 = time.time()
 print(sqrtG(L,1,3,2,1,2,3))
@@ -117,6 +118,7 @@ def plotGFF(GZ,L,d):
     else:
         print('Please enter a 1D or 2D GFF.')
 
+"""
 L = 10
 
 y = genGFFChafai2(L)
@@ -126,7 +128,6 @@ for l in range(L-1):
     plotGFF(y[l],L,2)
     plt.show()
 
-"""
 
 g = genGFFChafai(L,2)
 print(g)

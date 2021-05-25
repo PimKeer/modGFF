@@ -144,7 +144,7 @@ for n in range(N):
    ggff.plotGFF(y.reshape((N,N,N))[n],N,N)
    plt.show()
 """
-def cgpf0(C, N, epsilon = 1e-4):
+def cgpf0(C, N, epsilon = 1e-150):
     """CG sampler with PBC (variation 2)."""
 
     b = np.random.normal(size=(N + 2) ** 3)
@@ -167,8 +167,8 @@ def cgpf0(C, N, epsilon = 1e-4):
     k = 1
     conjloss = 0
 
-    # while np.linalg.norm(r_old) >= epsilon:
-    while k <= epsilon:
+    while np.linalg.norm(r_old) >= epsilon:
+    # while k <= epsilon:
         # print(np.dot(r_old,r_old))
         gamma = np.dot(r_old,r_old)/d_old
         z = np.random.normal(0,1,size=1)
@@ -190,8 +190,6 @@ def cgpf0(C, N, epsilon = 1e-4):
         k += 1
 
     return y_old
-
-
 
 def cut(x, L, l):
     """Cut the outer l layers from a LxLxL GFF realisation x."""
@@ -357,7 +355,7 @@ def cgpfacc(S, N, epsilon):
         # print('A  ', gammalist[i] * rlist[i] ** 2)
         traceA += gammalist[i] * rlist[i] ** 2
     return y_old, x_old , traceT, traceA, b, l
-
+"""
 N = 10
 u = np.array([50,100,150,200,250,300])
 epsilon = float(10) ** (-u)
@@ -387,7 +385,7 @@ plt.show()
 for n in range(N+2):
     ggff.plotGFF(y.reshape(N+2,N+2,N+2)[n],N+2,N+2)
     plt.show()
-
+"""
 # print(I(x,N))
 # print(b)
 #

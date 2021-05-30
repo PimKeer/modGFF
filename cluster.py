@@ -1,5 +1,4 @@
 import numpy as np
-from numba import jit
 
 def find(i, labels):
     while labels[i] != i:

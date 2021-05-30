@@ -1,8 +1,5 @@
 import numpy as np
-from matplotlib import pyplot as plt
-from numba import jit
 import time
-import genGFFSheffield as ggff
 from matrices import *
 
 #np.random.seed(1)
@@ -144,10 +141,10 @@ for n in range(N):
    ggff.plotGFF(y.reshape((N,N,N))[n],N,N)
    plt.show()
 """
-def cgpf0(C, N, epsilon = 1e-150):
+def cgpf0(C, N, epsilon = 1e-162):
     """CG sampler with PBC (variation 2)."""
 
-    b = np.random.normal(size=(N + 2) ** 3)
+    b = np.random.normal(0,1,size=(N + 2) ** 3)
     for i in range((N + 2) ** 3):
         if np.mod(i, N + 2) <= 0 \
                 or np.mod(i, N + 2) >= N + 1 \
@@ -158,7 +155,7 @@ def cgpf0(C, N, epsilon = 1e-150):
             b[i] = 0
     x_old = np.zeros((N + 2) ** 3)
 
-    r_old = b - C(x_old, N)
+    r_old = b # - C(x_old, N)
     p_old = r_old
     d_old = np.dot(p_old, C(p_old, N))
     # print(d_old)
@@ -167,9 +164,8 @@ def cgpf0(C, N, epsilon = 1e-150):
     k = 1
     conjloss = 0
 
-    while np.linalg.norm(r_old) >= epsilon:
+    while np.linalg.norm(r_old) >= epsilon and k <= 1000: # 1000 is N-dependent, for N=5 this gives enough margin.
     # while k <= epsilon:
-        # print(np.dot(r_old,r_old))
         gamma = np.dot(r_old,r_old)/d_old
         z = np.random.normal(0,1,size=1)
         y_new = y_old + z*p_old/np.sqrt(d_old)
@@ -177,19 +173,24 @@ def cgpf0(C, N, epsilon = 1e-150):
         beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
         p_new = r_new-beta*p_old
         d_new = np.dot(p_new,C(p_new,N))
+        # print(np.abs(np.dot(p_new, C(p_old, N))))
 
-        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-4 and conjloss == 0:
+        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-10 and conjloss == 0:
             print("loss of conjugacy at iteration: ", k)
-            conjloss = 1
             l = k
-
+            conjloss = 1
+            break
+        print(np.linalg.norm(r_old),np.linalg.norm(r_new), np.abs(np.dot(p_new, C(p_old, N))), np.linalg.norm(p_old), d_old, gamma, beta)
         y_old = y_new
         r_old = r_new
         p_old = p_new
         d_old = d_new
         k += 1
 
-    return y_old
+    if k == 1000:
+        conjloss = 1
+
+    return y_old, conjloss
 
 def cut(x, L, l):
     """Cut the outer l layers from a LxLxL GFF realisation x."""
@@ -221,7 +222,7 @@ for i in range(N):
 def cgpf0acc(C, N, epsilon):
     """CG sampler with PBC (variation 2)."""
 
-    b = np.random.normal(size = (N+2)**3)
+    b = np.random.normal(0,1,size = (N+2)**3)
     for i in range((N + 2) ** 3):
         if np.mod(i, N + 2) <= 0 \
                 or np.mod(i, N + 2) >= N + 1 \
@@ -357,7 +358,7 @@ def cgpfacc(S, N, epsilon):
     return y_old, x_old , traceT, traceA, b, l
 """
 N = 10
-u = np.array([50,100,150,200,250,300])
+u = np.array([162])
 epsilon = float(10) ** (-u)
 M = 5
 

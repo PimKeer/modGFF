@@ -1,5 +1,4 @@
 import numpy as np
-from numba import jit
 
 def I(x, N):
     # y = np.zeros(N**3)
@@ -18,6 +17,8 @@ def test(x,N):
 # x = np.array([1,2,5,0,3,1,2,0])
 # y =test(x,N)
 # print(y)
+
+print('HPC test')
 
 def testpf(x,N):
     S = 0.001*np.eye(N**2)

@@ -1,12 +1,12 @@
 import numpy as np
-from itertools import product
+#from itertools import product
 import time
 
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-import pandas as pd
-from numba import jit
+# from matplotlib import pyplot as plt
+# from mpl_toolkits.mplot3d import Axes3D
+# from matplotlib import cm
+# import pandas as pd
+# from numba import jit
 
 def e(L,n1,n2,n3,k1,k2,k3):
     """Eigenvectors of discrete Laplace operator."""
@@ -41,12 +41,11 @@ def savesqrtG(L):
     sqrtGvec = np.vectorize(sqrtG)
     xy = np.indices((L - 1, L - 1, L - 1, L - 1, L - 1, L - 1)) + 1
     sG = sqrtGvec(L,xy[0],xy[1],xy[2],xy[3],xy[4],xy[5])
-    np.save('gff_sG_'+str(L)+'.npy', sG)
+    np.save('test_gff_sG_'+str(L)+'.txt', sG)
 
-L = 20
-for i in range(1,4):
+for L in range(2,21):
     start = time.time()
-    savesqrtG(L*i)
+    savesqrtG(L)
     end = time.time()
     print(end-start)
 """
@@ -93,8 +92,8 @@ def genGFFChafai1(L):
     """
     return GZ
 
-def genGFFChafai2(L):
-    sG = np.load('gff_sG_'+str(L)+'.npy')
+def genGFFChafai2(L,sG):
+    # sG = np.load('gff_sG_'+str(L)+'.npy')
     GZ = np.zeros((L - 1, L - 1, L - 1))
     Z = np.random.normal(0, 1, size=(L - 1, L - 1, L - 1))
     for x1 in range(1, L):
@@ -102,9 +101,8 @@ def genGFFChafai2(L):
             for x3 in range(1, L):
                 GZ[x1 - 1][x2 - 1][x3 - 1] = np.sum(np.multiply(sG[x1 - 1][x2 - 1][x3 - 1], Z))
     return GZ
-
+"""
 def plotGFF(GZ,L,d):
-    """Plot a given 1D or 2D Gaussian Free Field."""
     if d == 1:
         plt.plot(np.arange(1,L),GZ)
     elif d == 2:
@@ -118,7 +116,7 @@ def plotGFF(GZ,L,d):
     else:
         print('Please enter a 1D or 2D GFF.')
 
-"""
+
 L = 10
 
 y = genGFFChafai2(L)

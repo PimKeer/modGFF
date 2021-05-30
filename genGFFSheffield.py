@@ -1,21 +1,16 @@
 import numpy as np
 
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-import pandas as pd
-
 def l2(j,k,m,n):
     if j+k==0:
         return 0
     else:
-        return 1/np.sqrt((np.sin(j*np.pi/m))**2+(np.sin(k*np.pi/n))**2)
+        return 1/np.sqrt((np.sin(j*np.pi/(2*m)))**2+(np.sin(k*np.pi/(2*n)))**2)
 
 def l3(j,k,l,m,n,o):
-    if j+k+l==0:
+    if j+k+l == 0:
         return 0
     else:
-        return 1/np.sqrt((np.sin(j*np.pi/m))**2+(np.sin(k*np.pi/n))**2+(np.sin(l*np.pi/o))**2)
+        return 1/np.sqrt((np.sin(j*np.pi/(m)))**2+(np.sin(k*np.pi/(n)))**2+(np.sin(l*np.pi/(o)))**2)
 
 def gen2DGFFSheffield(m,n):
     table = np.zeros((m,n))
@@ -44,6 +39,12 @@ def gen3DGFFSheffield(m,n,o):
     table = np.multiply(table,Z)
     table = np.fft.ifftn(table)*np.sqrt(m*n*o)
     return np.real(table)
+"""
+
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+import pandas as pd
 
 def plotGFF(GZ,m,n):
     X = np.arange(1,m)
@@ -56,7 +57,7 @@ def plotGFF(GZ,m,n):
     surf = ax.plot_trisurf(df.x, df.y, df.z, cmap=cm.jet, linewidth=0.1)
     # surf = ax.plot_trisurf(np.repeat(np.arange(1,L),L-1), np.tile(np.arange(1,L),L-1), GZ.flatten(),  cmap=cm.jet, linewidth=0.1)
     fig.colorbar(surf, shrink=0.5, aspect=5)
-"""
+
 m = 100
 n = 100
 o = 100

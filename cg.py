@@ -1,6 +1,11 @@
 import numpy as np
 import time
 from matrices import *
+import math
+import scipy
+from numba import jit, njit
+import genGFFSheffield as ggff
+from matplotlib import pyplot as plt
 
 #np.random.seed(1)
 
@@ -141,10 +146,48 @@ for n in range(N):
    ggff.plotGFF(y.reshape((N,N,N))[n],N,N)
    plt.show()
 """
-def cgpf0(C, N, epsilon = 1e-162):
+@njit
+def C(x, N):
+    """Returns the matrix vector product Cx, where C is the zero boundary precision matrix."""
+    y = np.zeros((N+2) ** 3)
+
+    wx = np.ones((N+2) ** 3)
+    wy = np.ones((N+2) ** 3)
+    wz = np.ones((N+2) ** 3)
+
+    for i in range((N+2) ** 3):
+        if np.mod(i, N + 2) <= 0 \
+                or np.mod(i, N + 2) >= N + 1 \
+                or np.mod(i, (N + 2) ** 2) <= (N + 2) - 1 \
+                or np.mod(i, (N + 2) ** 2) >= (N + 2) ** 2 - (N + 2) \
+                or np.mod(i, (N + 2) ** 3) <= (N + 2) ** 2 - 1 \
+                or np.mod(i, (N + 2) ** 3) >= (N + 2) ** 3 - (N + 2) ** 2:
+            y[i] = 0
+        else:
+            y[i] = x[i]
+
+            y[i] -= 1/6 * wx[i] * x[i + 1]
+
+            y[i] -= 1/6 * wx[i - 1] * x[i - 1]
+
+            y[i] -= 1/6 * wy[i] * x[i + (N + 2)]
+
+            y[i] -= 1/6 * wy[i - (N + 2)] * x[i - (N + 2)]
+
+            y[i] -= 1/6 * wz[i] * x[i + (N + 2) ** 2]
+
+            y[i] -= 1/6 * wz[i - (N + 2) ** 2] * x[i - (N + 2) ** 2]
+
+    return y
+
+@njit
+def cgpf0(C, N, epsilon = 0, kmax = 1e324):
     """CG sampler with PBC (variation 2)."""
 
-    b = np.random.normal(0,1,size=(N + 2) ** 3)
+    b = np.zeros((N + 2) ** 3)
+    for i in range((N + 2) ** 3):
+        b[i] = np.random.normal()
+
     for i in range((N + 2) ** 3):
         if np.mod(i, N + 2) <= 0 \
                 or np.mod(i, N + 2) >= N + 1 \
@@ -164,10 +207,17 @@ def cgpf0(C, N, epsilon = 1e-162):
     k = 1
     conjloss = 0
 
-    while np.linalg.norm(r_old) >= epsilon and k <= 1000: # 1000 is N-dependent, for N=5 this gives enough margin.
+    #if N <= 10:
+    #    kmax = 550
+    #elif N > 1:
+
+    while np.linalg.norm(r_old) > epsilon and k <= kmax: # kmax is N-dependent, for N=5 1000 gives enough margin.
     # while k <= epsilon:
+        if d_old == 0:
+            print()
+            break
         gamma = np.dot(r_old,r_old)/d_old
-        z = np.random.normal(0,1,size=1)
+        z = np.random.normal()
         y_new = y_old + z*p_old/np.sqrt(d_old)
         r_new = r_old - gamma*C(p_old,N)
         beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
@@ -175,54 +225,61 @@ def cgpf0(C, N, epsilon = 1e-162):
         d_new = np.dot(p_new,C(p_new,N))
         # print(np.abs(np.dot(p_new, C(p_old, N))))
 
-        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-10 and conjloss == 0:
+        # if math.isnan(beta):
+        #     conjloss = 1
+        #     break
+
+        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-4 and conjloss == 0:
             print("loss of conjugacy at iteration: ", k)
             l = k
             conjloss = 1
             break
-        print(np.linalg.norm(r_old),np.linalg.norm(r_new), np.abs(np.dot(p_new, C(p_old, N))), np.linalg.norm(p_old), d_old, gamma, beta)
+
+        print(k,
+              np.linalg.norm(r_old),
+              np.linalg.norm(p_old),
+              d_old,
+              gamma,
+              np.linalg.norm(y_new),
+              np.linalg.norm(r_new),
+              beta,
+              np.abs(np.dot(p_new, C(p_old, N))),
+              np.linalg.norm(p_new),
+              d_old)
         y_old = y_new
         r_old = r_new
         p_old = p_new
         d_old = d_new
         k += 1
 
-    if k == 1000:
+    gamma = np.dot(r_old, r_old) / d_old
+    # print(gamma)
+    z = np.random.normal()
+    # print(z)
+    y_new = y_old + z * p_old / np.sqrt(d_old)
+    # print(y_new)
+    r_new = r_old - gamma * C(p_old, N)
+    # print(r_new)
+    beta = - np.dot(r_new, r_new) / np.dot(r_old, r_old)
+    # print(beta)
+    p_new = r_new - beta * p_old
+    # print(p_new)
+    d_new = np.dot(p_new, C(p_new, N))
+    # print(d_new)
+
+    if k >= kmax:
         conjloss = 1
 
     return y_old, conjloss
 
-def cut(x, L, l):
-    """Cut the outer l layers from a LxLxL GFF realisation x."""
-    x_cut = []
-
-    for i in range(L**3):
-        if np.mod(i, L) < l \
-                or np.mod(i, L) > L - l - 1 \
-                or np.mod(i, L ** 2) < L * l \
-                or np.mod(i, L ** 2) > L ** 2 - L * l - 1 \
-                or np.mod(i, L ** 3) < L ** 2 * l \
-                or np.mod(i, L ** 3) > L ** 3 - L ** 2 * l - 1:
-            pass
-        else:
-            x_cut.append(x[i])
-
-    return np.array(x_cut)
-"""
-N = 10
-y = cgpf0(C, N, 300)
-print(y)
-print(cut(y,N+2,1))
-for i in range(N):
-    ggff.plotGFF(y.reshape(N+2,N+2,N+2)[i],N+2,N+2)
-    plt.show()
-    ggff.plotGFF(cut(y,N+2,1).reshape(N, N, N)[i], N, N)
-    plt.show()
-"""
-def cgpf0acc(C, N, epsilon):
+@njit
+def cgpf0acc(C, N, epsilon = 0, kmax = 1e324):
     """CG sampler with PBC (variation 2)."""
 
-    b = np.random.normal(0,1,size = (N+2)**3)
+    b = np.zeros((N + 2) ** 3)
+    for i in range((N + 2) ** 3):
+        b[i] = np.random.normal()
+
     for i in range((N + 2) ** 3):
         if np.mod(i, N + 2) <= 0 \
                 or np.mod(i, N + 2) >= N + 1 \
@@ -242,13 +299,21 @@ def cgpf0acc(C, N, epsilon):
     k = 1
     conjloss = 0
 
+    if N <= 10:
+        klim = 550
+    elif N > 10 and N <= 20:
+        klim = 2000
+
     gammalist = []
     dlist = [d_old]
     rlist = [np.linalg.norm(r_old)]
 
-    while np.linalg.norm(r_old) >= epsilon:
+    while np.linalg.norm(r_old) > epsilon and k <= kmax:
     # while k <= epsilon:
         # print(np.linalg.norm(r_old))
+        if d_old == 0:
+            print(k)
+            break
         gamma = np.dot(r_old,r_old)/d_old
         x_new = x_old + gamma*p_old
         z = np.random.normal(0,1,size=1)
@@ -263,386 +328,101 @@ def cgpf0acc(C, N, epsilon):
             print("loss of conjugacy at iteration: ", k)
             conjloss = 1
             l = k
+            break
 
-        gammalist.append(gamma)
-        dlist.append(d_new)
-        rlist.append(np.linalg.norm(r_new))
-
-        x_old = x_new
-        y_old = y_new
-        r_old = r_new
-        p_old = p_new
-        d_old = d_new
-        k += 1
-
-    if conjloss == 0:
-        l = k
-
-    # print(gammalist)
-    # print(dlist)
-    # print(rlist)
-    traceT = 0
-    for j in range(0,l-1):
-        for i in range(j,l-1):
-            # print('T  ', gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2))
-            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2)
-    traceA = 0
-    for i in range(0,l-1):
-        # print('A  ', gammalist[i] * rlist[i] ** 2)
-        traceA += gammalist[i] * rlist[i] ** 2
-    return y_old, x_old , traceT, traceA, b, l
-
-def cgpfacc(S, N, epsilon):
-    """CG sampler with PBC (variation 2)."""
-
-    b = np.random.normal(size = N**2)
-    x_old = np.zeros(N**2)
-
-    r_old = b - S(x_old, N)
-    p_old = r_old
-    d_old = np.dot(p_old, S(p_old, N))
-    # print(d_old)
-    y_old = x_old
-
-    k = 1
-    conjloss = 0
-
-    gammalist = []
-    dlist = [d_old]
-    rlist = [np.linalg.norm(r_old)]
-
-    # while np.linalg.norm(r_old) >= epsilon:
-    while k <= epsilon:
-        # print(np.dot(r_old,r_old))
-        gamma = np.dot(r_old,r_old)/d_old
-        x_new = x_old + gamma*p_old
-        z = np.random.normal(0,1,size=1)
-        y_new = y_old + z*p_old/np.sqrt(d_old)
-        r_new = r_old - gamma*S(p_old,N)
-        beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
-        p_new = r_new-beta*p_old
-        d_new = np.dot(p_new,S(p_new,N))
-        # print(d_new)
-
-        if np.abs(np.dot(p_new, S(p_old, N))) >= 1e-4 and conjloss == 0:
-            print("loss of conjugacy at iteration: ", k)
-            conjloss = 1
-            l = k
-
-        gammalist.append(gamma)
-        dlist.append(d_new)
-        rlist.append(np.linalg.norm(r_new))
-
-        x_old = x_new
-        y_old = y_new
-        r_old = r_new
-        p_old = p_new
-        d_old = d_new
-        k += 1
-
-    if conjloss == 0:
-        l = k
-
-    # print(gammalist)
-    # print(dlist)
-    # print(rlist)
-    traceT = 0
-    for j in range(0,l-1):
-        for i in range(j,l-1):
-            # print('T  ', gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2))
-            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2)
-    traceA = 0
-    for i in range(0,l-1):
-        # print('A  ', gammalist[i] * rlist[i] ** 2)
-        traceA += gammalist[i] * rlist[i] ** 2
-    return y_old, x_old , traceT, traceA, b, l
-"""
-N = 10
-u = np.array([162])
-epsilon = float(10) ** (-u)
-M = 5
-
-mtma = np.zeros(len(epsilon))
-larr = np.zeros(len(epsilon))
-
-for i in range(len(epsilon)):
-    mT = 0
-    mA = 0
-    lav = 0
-    for m in range(M):
-        y,x,t,a,b,l = cgpf0acc(C, N, epsilon[i])
-        mT += t
-        mA += a
-        lav += l
-        print(i, l, mT/mA, t, a)
-    mtma[i] = mT/mA
-    larr[i] = lav/M
-
-plt.plot(u,larr)
-plt.show()
-plt.plot(u,mtma)
-plt.show()
-
-for n in range(N+2):
-    ggff.plotGFF(y.reshape(N+2,N+2,N+2)[n],N+2,N+2)
-    plt.show()
-"""
-# print(I(x,N))
-# print(b)
-#
-# print(y)
-# print(x)
-# print(t)
-# print(t/a)
-
-# N=10
-#
-# theta = cg(A, N,k_max=1000)
-#
-# for i in range(N):
-#     ggff.plotGFF(theta.reshape((N,N,N))[i],N,N)
-#     plt.show()
-
-def cg0(C, N, k_max, epsilon):
-    """CG sampler with ZBC."""
-    #c = np.random.normal(size = (N+2)**3)
-    c = np.random.normal(size=N ** 3)
-    # for i in range((N + 2) ** 3):
-    #     if np.mod(i, N + 2) <= 0 \
-    #             or np.mod(i, N + 2) >= N + 1 \
-    #             or np.mod(i, (N + 2) ** 2) <= (N + 2) - 1 \
-    #             or np.mod(i, (N + 2) ** 2) >= (N + 2) ** 2 - (N + 2) \
-    #             or np.mod(i, (N + 2) ** 3) <= (N + 2) ** 2 - 1 \
-    #             or np.mod(i, (N + 2) ** 3) >= (N + 2) ** 3 - (N + 2) ** 2:
-    #         c[i] = 0
-
-    r_old = c
-    p_old = r_old
-    d_old = np.dot(p_old, C(p_old, N))
-    #y_old = np.zeros((N+2)**3)
-    y_old = np.zeros(N** 3)
-
-    conjloss = 0
-    k=1
-
-    gammalist = []
-    dlist = [d_old]
-
-    #r0 = np.sqrt(np.sqrt(np.dot(r_old,r_old)))
-    #r_array = r0 * np.zeros(k_max+1)
-    #t = np.zeros(k_max+1)
-
-    while np.dot(r_old,r_old) >= epsilon and k<=k_max:
-        gamma = np.dot(r_old,r_old)/d_old
-        r_new = r_old - gamma * C(p_old, N)
-        beta = - np.dot(r_new,r_new)/(gamma * d_old)
-        p_new = r_new - beta * p_old
-
-        print(k, np.linalg.norm(C(p_old, N)))
-
-        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-4 and conjloss == 0:
-            print("Loss of conjugacy at iteration ", k)
-            conjloss = 1
+        if k >= klim:
             l=k
-
-        d_new = np.dot(p_new, C(p_new, N))
-        z = np.random.normal(size = 1)
-        y_new = y_old + z/np.sqrt(d_old) * p_old
-
-        r_old = r_new
-        p_old = p_new
-        d_old = d_new
-        y_old = y_new
-        k += 1
+            conjloss = 1
+            break
 
         gammalist.append(gamma)
         dlist.append(d_new)
+        rlist.append(np.linalg.norm(r_new))
+
+        x_old = x_new
+        y_old = y_new
+        r_old = r_new
+        p_old = p_new
+        d_old = d_new
+        k += 1
 
     if conjloss == 0:
         l = k
 
+    # print(gammalist)
+    # print(dlist)
+    # print(rlist)
     traceT = 0
-    for j in range(l-1):
-        for i in range(j, l-1):
-            traceT += gammalist[i] ** 2 * dlist[i] / (gammalist[j] * dlist[j])
-
+    for j in range(0,l-1):
+        for i in range(j,l-1):
+            # print('T  ', gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2))
+            traceT += gammalist[i] * rlist[i] ** 2 / (rlist[j] ** 2)
     traceA = 0
-    for i in range(l-1):
-        traceA += gammalist[i] ** 2 * dlist[i]
+    for i in range(0,l-1):
+        # print('A  ', gammalist[i] * rlist[i] ** 2)
+        traceA += gammalist[i] * rlist[i] ** 2
+    return y_old, x_old , traceT, traceA, b, l, conjloss
 
-    return y_old, traceT, traceA
+def cut(x, L, l):
+    """Cut the outer l layers from a LxLxL GFF realisation x."""
+    x_cut = []
+
+    for i in range(L**3):
+        if np.mod(i, L) < l \
+                or np.mod(i, L) > L - l - 1 \
+                or np.mod(i, L ** 2) < L * l \
+                or np.mod(i, L ** 2) > L ** 2 - L * l - 1 \
+                or np.mod(i, L ** 3) < L ** 2 * l \
+                or np.mod(i, L ** 3) > L ** 3 - L ** 2 * l - 1:
+            pass
+        else:
+            x_cut.append(x[i])
+
+    return np.array(x_cut)
 """
-N = 10
-epsilon = 1e-4
-m = 50
-
-mT = 0
-mA = 0
-
-y, t, a = cg0(I, N, m, epsilon)
-print(m,t,a,t/a)
+if __name__ == '__main__':
+    N = 20
+    tick = time.time()
+    y=cgpf0(C, N, epsilon = 4e-161)[0]
+    tock = time.time()
+    print(tock-tick)
+    # print(y)
+    # print(cut(y,N+2,1))
+    # for i in range(N):
+    #     ggff.plotGFF(y.reshape(N+2,N+2,N+2)[i],N+2,N+2)
+    #     plt.show()
+    #     ggff.plotGFF(cut(y,N+2,1).reshape(N, N, N)[i], N, N)
+    #     plt.show()
 """
-def cgnorm(A, N, k_max):
-    y = cg(A, N, k_max)
-    mu = np.mean(y)
-    sd = np.std(y)
-    return (y-mu)/sd
+if __name__ == '__main__':
+    N = 10
+    epsilon = np.array([1e-162])
+    u = np.arange(len(epsilon))
+    M = 20
 
-def cgacc(A, N, k_max = 10, random = False):
-    """Trace ratio accuracy test."""
-    if random:
-        c = np.random.normal(size = N**3)
-    else:
-        c = np.random.binomial(1,0.5,size=N ** 3)*2-1
+    mtma = np.zeros(len(epsilon))
+    larr = np.zeros(len(epsilon))
 
-    r_old = c
-    p_old = r_old
-    d_old = np.dot(p_old, A(p_old, N))
-    y_old = np.zeros(N ** 3)
+    for i in range(len(epsilon)):
+        mT = 0
+        mA = 0
+        lav = 0
+        m = 0
+        while m < M:
+            try:
+                y,x,t,a,b,l,c = cgpf0acc(C, N, epsilon[i])
+                if c == 0:
+                    mT += t
+                    mA += a
+                    lav += l
+                    print(i, l, mT/mA, t, a)
+                    m += 1
+            except ZeroDivisionError:
+                pass
+        mtma[i] = mT/mA
+        larr[i] = lav/M
 
-    conjloss = 0
-
-    gammas = np.zeros(k_max)
-    ds = np.zeros(k_max + 1)
-    ds[0] = d_old
-    rolds = np.zeros(k_max + 1)
-    rolds[0] = np.dot(r_old, r_old)
-
-    # r0 = np.sqrt(np.sqrt(np.dot(r_old,r_old)))
-    # r_array = r0 * np.zeros(k_max+1)
-    # t = np.zeros(k_max+1)
-
-    k = 1
-
-    gamma = np.dot(r_old, r_old) / d_old
-    r_new = r_old - gamma * A(p_old, N)
-    beta = - np.dot(r_new, r_new) / (gamma * d_old)
-    p_new = r_new - beta * p_old
-
-    if np.abs(np.dot(p_new, A(p_old, N))) >= 1e-4 and conjloss == 0:
-        print("Loss of conjugacy at iteration ", k)
-        conjloss = 1
-
-    d_new = np.dot(p_new, A(p_new, N))
-    z = np.random.normal(size=1)
-    y_new = y_old + z / np.sqrt(d_old) * p_old
-
-    gammas[k - 1] = gamma
-    ds[k] = d_new
-    rolds[k] = np.dot(r_new, r_new)
-
-    r_old = r_new
-    p_old = p_new
-    d_old = d_new
-    y_old = y_new
-
-    print(np.abs(np.dot(p_new, A(p_old, N))))
-
-    k = 2
-
-    while np.abs(np.dot(p_new, A(p_old, N))) < 1e-4 or conjloss == 0:
-        # start = time.time()
-        gamma = np.dot(r_old, r_old) / d_old
-        r_new = r_old - gamma * A(p_old, N)
-        beta = - np.dot(r_new, r_new) / (gamma * d_old)
-        p_new = r_new - beta * p_old
-
-        if np.abs(np.dot(p_new, A(p_old, N))) >= 1e-4 and conjloss == 0:
-            print("Loss of conjugacy at iteration ", k)
-            conjloss = 1
-
-        d_new = np.dot(p_new, A(p_new, N))
-        z = np.random.normal(size=1)
-        y_new = y_old + z / np.sqrt(d_old) * p_old
-
-        gammas[k - 1] = gamma
-        ds[k] = d_new
-        rolds[k] = np.dot(r_new, r_new)
-
-        r_old = r_new
-        p_old = p_new
-        d_old = d_new
-        y_old = y_new
-
-        k += 1
-
-        # end = time.time()
-        # t[k] = end-start
-
-        # r_array[k] = np.sqrt(np.dot(r_old,r_old))
-
-    # print(gammas)
-    # print(ds)
-    # print(rolds)
-
-    traceT = 0
-    for j in range(k):
-        for i in range(j, k):
-            #traceT += (gammas[i] ** 2 * ds[i]) / (gammas[j] * ds[j])
-            traceT += (gammas[i] * rolds[i]) / (rolds[j])
-
-    traceA = 0
-    for i in range(k):
-        #traceA += gammas[i] ** 2 * ds[i]
-        traceA += gammas[i] * rolds[i]
-
-    return traceT/traceA, traceT, traceA
-
-""" 
-#np.random.seed(1)
-moy = 0
-moyA = 0
-moyT = 0
-M = 10000
-for m in range(1,M+1):
-    x = cgacc(A, 10, k_max=1000 , random=False)
-    moy += x[0]
-    moyT += x[1]
-    moyA += x[2]
-    print(m, "  :  ", moyT/moyA)
-
-print(moy/M)
-
-N = 50
-k_max = 10
-
-theta = cg0(C,N,k_max)
-
-for i in range(N):
-    ggff.plotGFF(theta.reshape((N+2,N+2,N+2))[i],N+2,N+2)
+    plt.plot(u,larr)
     plt.show()
-
-print(np.shape(theta[0]))
-
-plt.plot(theta[1])
-plt.show()
-
-plt.plot(theta[2])
-plt.show()
-print(np.mean(theta[2][1:]))
-
-ggff.plotGFF(theta[0].reshape((N,N,N))[0],N,N)
-plt.show()
-
-mu = np.zeros(N**3)
-d = len(mu)
-size = 1
-init = np.zeros(N**3)
-print(np.shape(np.random.normal(0,1,size=d)))
-
-r_old = np.random.normal(0,1,size=(d,size)) - A(init).reshape((1000,1))
-print(np.shape(A(init)))
-print(np.shape(r_old))
-
-p_old = r_old
-print(p_old[0])
-d_old = (p_old * A(p_old)).sum(axis=0)
-print(type(y))
-print(type(z))
-
-def I(x):
-    return x
-
-s = pg.sampler_CG(np.zeros(N**3),A,5,np.zeros(N**3))
-print(s)
-"""
+    plt.plot(u,mtma)
+    plt.show()

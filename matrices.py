@@ -183,7 +183,7 @@ def C(x, N):
 
             y[i] -= 1/6 * wz[i - (N + 2) ** 2] * x[i - (N + 2) ** 2]
 
-    return y
+    return y/2
 
 def C2(x, N):
     """Returns the matrix vector product Cx, where C is the zero boundary precision matrix."""

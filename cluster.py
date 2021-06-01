@@ -1,4 +1,6 @@
 import numpy as np
+from numba import jit
+import scipy
 
 def find(i, labels):
     while labels[i] != i:
@@ -13,7 +15,7 @@ def union3(i, j, k, labels):
     labels[ma] = mi
     labels[me] = mi
 
-#@jit(nopython=True)
+
 def cluster(x, N):
     """Hoshen-Kopelman routine to find the clusters for a given 0-1 array."""
     x = np.append(x, 0)

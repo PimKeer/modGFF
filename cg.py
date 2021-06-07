@@ -6,6 +6,7 @@ import scipy
 from numba import jit, njit
 import genGFFSheffield as ggff
 from matplotlib import pyplot as plt
+import conductances as cond
 
 #np.random.seed(1)
 
@@ -147,13 +148,27 @@ for n in range(N):
    plt.show()
 """
 @njit
-def C(x, N):
+def I(x, wx, wy, wz, N):
+    y = np.zeros((N+2 ** 3))
+
+    for i in range((N + 2) ** 3):
+        if np.mod(i, N + 2) <= 0 \
+                or np.mod(i, N + 2) >= N + 1 \
+                or np.mod(i, (N + 2) ** 2) <= (N + 2) - 1 \
+                or np.mod(i, (N + 2) ** 2) >= (N + 2) ** 2 - (N + 2) \
+                or np.mod(i, (N + 2) ** 3) <= (N + 2) ** 2 - 1 \
+                or np.mod(i, (N + 2) ** 3) >= (N + 2) ** 3 - (N + 2) ** 2:
+            y[i] = 0
+
+        else:
+            y[i] = x[i]
+
+    return y
+
+@njit
+def C(x, wx, wy, wz, N):
     """Returns the matrix vector product Cx, where C is the zero boundary precision matrix."""
     y = np.zeros((N+2) ** 3)
-
-    wx = np.ones((N+2) ** 3)
-    wy = np.ones((N+2) ** 3)
-    wz = np.ones((N+2) ** 3)
 
     for i in range((N+2) ** 3):
         if np.mod(i, N + 2) <= 0 \
@@ -181,7 +196,7 @@ def C(x, N):
     return y
 
 @njit
-def cgpf0(C, N, epsilon = 0, kmax = 1e324):
+def cgpf0(C, wx, wy, wz, N, epsilon = 0, kmax = 1e324):
     """CG sampler with PBC (variation 2)."""
 
     b = np.zeros((N + 2) ** 3)
@@ -198,9 +213,12 @@ def cgpf0(C, N, epsilon = 0, kmax = 1e324):
             b[i] = 0
     x_old = np.zeros((N + 2) ** 3)
 
+    # Kd = 1e300
+    # Kr = 1e81
+
     r_old = b # - C(x_old, N)
     p_old = r_old
-    d_old = np.dot(p_old, C(p_old, N))
+    d_old = np.dot(p_old, C(p_old, wx, wy, wz, N))
     # print(d_old)
     y_old = x_old
 
@@ -211,60 +229,66 @@ def cgpf0(C, N, epsilon = 0, kmax = 1e324):
     #    kmax = 550
     #elif N > 1:
 
-    while np.linalg.norm(r_old) > epsilon and k <= kmax: # kmax is N-dependent, for N=5 1000 gives enough margin.
-    # while k <= epsilon:
-        if d_old == 0:
-            print()
-            break
-        gamma = np.dot(r_old,r_old)/d_old
+    while np.linalg.norm(r_old) >= epsilon and k <= kmax: # kmax is N-dependent, for N=5 1000 gives enough margin.
+        gamma = np.dot(r_old,r_old)/(d_old)
         z = np.random.normal()
+        print(np.sqrt(d_old))
         y_new = y_old + z*p_old/np.sqrt(d_old)
-        r_new = r_old - gamma*C(p_old,N)
+        r_new = r_old - gamma*C(p_old, wx, wy, wz,N)
         beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
+        sqrtbeta = np.linalg.norm(r_new)/np.linalg.norm(r_old)
+        # print(beta, -sqrtbeta**2)
         p_new = r_new-beta*p_old
-        d_new = np.dot(p_new,C(p_new,N))
-        # print(np.abs(np.dot(p_new, C(p_old, N))))
+        print(np.linalg.norm(r_old), np.linalg.norm(r_new), y_new, beta, p_new, d_old)
+        # p_new2 = r_new+sqrtbeta**2*p_old
+        #print(np.linalg.norm(p_new),np.linalg.norm(p_new2))
+        #print(np.linalg.norm(C(p_new, wx, wy, wz,N)),np.linalg.norm(C(p_new2, wx, wy, wz,N)))
+        d_new = np.dot(p_new,C(p_new, wx, wy, wz,N))
+        print(d_new)
+        # d_new2 = np.dot(p_new2,C(p_new2, wx, wy, wz,N))
+        # print(k, d_new,d_new2)
+        # print(k,np.dot(p_new, C(p_old, wx, wy, wz, N)))
 
         # if math.isnan(beta):
         #     conjloss = 1
         #     break
 
-        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-4 and conjloss == 0:
+        if np.abs(np.dot(p_new, C(p_old, wx, wy, wz, N))) >= 1e296 and conjloss == 0:
             print("loss of conjugacy at iteration: ", k)
             l = k
             conjloss = 1
             break
 
-        print(k,
-              np.linalg.norm(r_old),
-              np.linalg.norm(p_old),
-              d_old,
-              gamma,
-              np.linalg.norm(y_new),
-              np.linalg.norm(r_new),
-              beta,
-              np.abs(np.dot(p_new, C(p_old, N))),
-              np.linalg.norm(p_new),
-              d_old)
+        # print(k,
+        #       np.dot(Kr*r_old,Kr*r_old),
+        #       np.linalg.norm(p_old),
+        #       d_old,
+        #       gamma,
+        #       # np.linalg.norm(y_new),
+        #       np.linalg.norm(r_new),
+        #       beta,
+        #       np.abs(np.dot(p_new, C(p_old, N))),
+        #       np.linalg.norm(p_new),
+        #       d_old)
         y_old = y_new
         r_old = r_new
         p_old = p_new
         d_old = d_new
         k += 1
 
-    gamma = np.dot(r_old, r_old) / d_old
+    # gamma = np.dot(r_old, r_old) / (d_old/1e20)
     # print(gamma)
-    z = np.random.normal()
+    # z = np.random.normal()
     # print(z)
-    y_new = y_old + z * p_old / np.sqrt(d_old)
+    # y_new = y_old + z * p_old / np.sqrt(d_old/1e20)
     # print(y_new)
-    r_new = r_old - gamma * C(p_old, N)
+    # r_new = r_old - gamma * C(p_old, N)
     # print(r_new)
-    beta = - np.dot(r_new, r_new) / np.dot(r_old, r_old)
+    # beta = - np.dot(r_new, r_new) / np.dot(r_old, r_old)
     # print(beta)
-    p_new = r_new - beta * p_old
+    # p_new = r_new - beta * p_old
     # print(p_new)
-    d_new = np.dot(p_new, C(p_new, N))
+    # d_new = np.dot(p_new, C(p_new, N))
     # print(d_new)
 
     if k >= kmax:
@@ -273,12 +297,12 @@ def cgpf0(C, N, epsilon = 0, kmax = 1e324):
     return y_old, conjloss
 
 @njit
-def cgpf0acc(C, N, epsilon = 0, kmax = 1e324):
+def cgpf0acc(C, wx, wy, wz, N, epsilon = 0, kmax = 1e324):
     """CG sampler with PBC (variation 2)."""
 
     b = np.zeros((N + 2) ** 3)
     for i in range((N + 2) ** 3):
-        b[i] = np.random.normal()
+        b[i] = 1e150*np.random.normal()
 
     for i in range((N + 2) ** 3):
         if np.mod(i, N + 2) <= 0 \
@@ -290,9 +314,9 @@ def cgpf0acc(C, N, epsilon = 0, kmax = 1e324):
             b[i] = 0
     x_old = np.zeros((N + 2) ** 3)
 
-    r_old = b - C(x_old, N)
+    r_old = b - C(x_old, wx, wy, wz, N)
     p_old = r_old
-    d_old = np.dot(p_old, C(p_old, N))
+    d_old = np.dot(p_old, C(p_old, wx, wy, wz, N))
     # print(d_old)
     y_old = x_old
 
@@ -310,21 +334,22 @@ def cgpf0acc(C, N, epsilon = 0, kmax = 1e324):
 
     while np.linalg.norm(r_old) > epsilon and k <= kmax:
     # while k <= epsilon:
-        # print(np.linalg.norm(r_old))
+        print(np.linalg.norm(r_old))
         if d_old == 0:
             print(k)
             break
         gamma = np.dot(r_old,r_old)/d_old
+        print(np.linalg.norm(C(p_old, wx, wy, wz,N)))
         x_new = x_old + gamma*p_old
         z = np.random.normal(0,1,size=1)
         y_new = y_old + z*p_old/np.sqrt(d_old)
-        r_new = r_old - gamma*C(p_old,N)
+        r_new = r_old - gamma*C(p_old, wx, wy, wz,N)
         # print(r_new[2],r_new[N+2],r_new[(N+2)**2+2],r_new[(N+2)**3-N])
         beta = - np.dot(r_new,r_new)/np.dot(r_old,r_old)
         p_new = r_new-beta*p_old
-        d_new = np.dot(p_new,C(p_new,N))
+        d_new = np.dot(p_new,C(p_new, wx, wy, wz,N))
 
-        if np.abs(np.dot(p_new, C(p_old, N))) >= 1e-4 and conjloss == 0:
+        if np.abs(np.dot(p_new, C(p_old, wx, wy, wz, N))) >= 1e296 and conjloss == 0:
             print("loss of conjugacy at iteration: ", k)
             conjloss = 1
             l = k
@@ -379,24 +404,30 @@ def cut(x, L, l):
             x_cut.append(x[i])
 
     return np.array(x_cut)
-"""
+
 if __name__ == '__main__':
+    
+
+    # a = 0.001
+    # b = 1
+
     N = 20
-    tick = time.time()
-    y=cgpf0(C, N, epsilon = 4e-161)[0]
-    tock = time.time()
-    print(tock-tick)
-    # print(y)
-    # print(cut(y,N+2,1))
-    # for i in range(N):
-    #     ggff.plotGFF(y.reshape(N+2,N+2,N+2)[i],N+2,N+2)
-    #     plt.show()
-    #     ggff.plotGFF(cut(y,N+2,1).reshape(N, N, N)[i], N, N)
-    #     plt.show()
+
+    wx, wy, wz = cond.wxyz(N, 1e-200, 1)
+
+    y=cgpf0(C, wx, wy, wz, N, epsilon = 1e-160)[0]
+
+    print(y)
+    print(cut(y,N+2,1))
+    for i in range(N):
+        ggff.plotGFF(y.reshape(N+2,N+2,N+2)[i],N+2,N+2)
+        plt.show()
+        # ggff.plotGFF(cut(y,N+2,1).reshape(N, N, N)[i], N, N)
+        # plt.show()
 """
 if __name__ == '__main__':
-    N = 10
-    epsilon = np.array([1e-162])
+    N = 40
+    epsilon = np.array([1,1e-300]) # N = 5: 1e75 good; N=10: 1e-28 workable, 1e-30 best; N=20: 1e-300 soms fout (0.7 max score)
     u = np.arange(len(epsilon))
     M = 20
 
@@ -408,21 +439,28 @@ if __name__ == '__main__':
         mA = 0
         lav = 0
         m = 0
+
+        wx = np.ones((N + 2) ** 3)
+        wy = np.ones((N + 2) ** 3)
+        wz = np.ones((N + 2) ** 3)
+
         while m < M:
             try:
-                y,x,t,a,b,l,c = cgpf0acc(C, N, epsilon[i])
+                y,x,t,a,b,l,c = cgpf0acc(C, wx, wy, wz, N, epsilon[i])
                 if c == 0:
                     mT += t
                     mA += a
                     lav += l
-                    print(i, l, mT/mA, t, a)
+                    print(i, l, mT/mA*1e300, t, a)
                     m += 1
             except ZeroDivisionError:
+                print("fout")
                 pass
-        mtma[i] = mT/mA
+        mtma[i] = mT/mA*1e300
         larr[i] = lav/M
 
     plt.plot(u,larr)
     plt.show()
     plt.plot(u,mtma)
     plt.show()
+"""

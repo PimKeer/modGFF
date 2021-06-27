@@ -1,36 +1,36 @@
 import numpy as np
-#from itertools import product
 import time
-
 # from matplotlib import pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 # from matplotlib import cm
 # import pandas as pd
-# from numba import jit
+from numba import njit
 
+@njit
 def e(L,n1,n2,n3,k1,k2,k3):
     """Eigenvectors of discrete Laplace operator."""
-    return 2 ** (3/2) * np.sin(np.pi * n1 * k1 / L) * np.sin(np.pi * n2 * k2 / L) * np.sin(np.pi * n3 * k3 / L)
+    return np.sin(np.pi * n1 * k1 / L) * np.sin(np.pi * n2 * k2 / L) * np.sin(np.pi * n3 * k3 / L)
+    # return 2 ** (3/2) * np.sin(np.pi * n1 * k1 / L) * np.sin(np.pi * n2 * k2 / L) * np.sin(np.pi * n3 * k3 / L)
 
+@njit
 def sl(L,n1,n2,n3):
     """Eigenvalues of discrete Laplace operator."""
-    lnL = 2 * ((np.sin((np.pi * n1) / (2 * L))) ** 2 + (np.sin((np.pi * n2) / (2 * L))) ** 2 + (np.sin((np.pi * n3) / (2 * L))) ** 2)
+    # lnL = 2 * ((np.sin((np.pi * n1) / (2 * L))) ** 2 + (np.sin((np.pi * n2) / (2 * L))) ** 2 + (np.sin((np.pi * n3) / (2 * L))) ** 2)
+    lnL = 2/3 * ((np.sin((np.pi * n1) / (2 * L))) ** 2 + (np.sin((np.pi * n2) / (2 * L))) ** 2 + (np.sin((np.pi * n3) / (2 * L))) ** 2)
     return 1/np.sqrt(lnL)
-"""
-L = 5
-evec = np.vectorize(e)
-n = np.indices((L-1,L-1,L-1))+1
-print('hallo', e(L,n[0],n[1],n[2],1,2,3))
-"""
 
 def sqrtG(L,x1,x2,x3,y1,y2,y3):
-    G = 0
+    # print(x1,x2,x3)
     n = np.indices((L-1,L-1,L-1))+1
     G = (sl(L,n[0],n[1],n[2]) * e(L,n[0],n[1],n[2],x1,x2,x3) * e(L,n[0],n[1],n[2],y1,y2,y3)).sum()
     return G
 
+@njit
 def sqrtG2(L,x1,x2,x3,y1,y2,y3):
     G = 0
+    x = np.random.random(1)
+    if x <= 0.00001:
+        print(x1,x2,x3,y1,y2,y3)
     for n1 in range(1,L):
         for n2 in range(1,L):
             for n3 in range(1,L):
@@ -41,14 +41,19 @@ def savesqrtG(L):
     sqrtGvec = np.vectorize(sqrtG)
     xy = np.indices((L - 1, L - 1, L - 1, L - 1, L - 1, L - 1)) + 1
     sG = sqrtGvec(L,xy[0],xy[1],xy[2],xy[3],xy[4],xy[5])
-    np.save('test_gff_sG_'+str(L)+'.txt', sG)
+    # print(sG)
+    np.save('nonjit_gff_sG_'+str(L)+'.txt', sG)
 
-for L in range(2,21):
-    start = time.time()
-    savesqrtG(L)
-    end = time.time()
-    print(end-start)
+def savesqrtG2(L):
+    sqrtGvec = np.vectorize(sqrtG2)
+    xy = np.indices((L - 1, L - 1, L - 1, L - 1, L - 1, L - 1)) + 1
+    sG = sqrtGvec(L,xy[0],xy[1],xy[2],xy[3],xy[4],xy[5])
+    # print(sG)
+    np.save('njit_gff_sG_'+str(L)+'.txt', sG)
 """
+for L in range(21,22):
+    savesqrtG2(L)
+
 L=100
 start1 = time.time()
 print(sqrtG(L,1,3,2,1,2,3))
@@ -101,7 +106,9 @@ def genGFFChafai2(L,sG):
             for x3 in range(1, L):
                 GZ[x1 - 1][x2 - 1][x3 - 1] = np.sum(np.multiply(sG[x1 - 1][x2 - 1][x3 - 1], Z))
     return GZ
-"""
+
+
+
 def plotGFF(GZ,L,d):
     if d == 1:
         plt.plot(np.arange(1,L),GZ)
@@ -115,9 +122,23 @@ def plotGFF(GZ,L,d):
         fig.colorbar(surf, shrink=0.5, aspect=5)
     else:
         print('Please enter a 1D or 2D GFF.')
+"""
+
+L = 5
+
+sG1 = np.load("2_gff_sG_5.txt.npy")
+sG2 = np.load("njit_gff_sG_5.txt.npy")
+
+sG1 = sG1.reshape((L-1)**6)
+sG2=sG2.reshape((L-1)**6)
+
+alpha = sG1[0]/sG2[0]
+
+for i in range((L-1)**6):
+    print(sG1[i]-sG2[i]*alpha)
 
 
-L = 10
+x=input('x:')
 
 y = genGFFChafai2(L)
 print(y)

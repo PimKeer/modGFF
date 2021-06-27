@@ -158,43 +158,42 @@ def wxyz(N, a, b):
         return np.zeros((N + 2) ** 3), np.zeros((N + 2) ** 3), np.zeros((N + 2) ** 3)
 
 
-"""
-N = 10
-wx = wxyz(N,0,1)[0].reshape(N+2,N+2,N+2)
-wy = wxyz(N,0,1)[1].reshape(N+2,N+2,N+2)
-wz = wxyz(N,0,1)[2].reshape(N+2,N+2,N+2)
+if __name__ == "__main__":
+    N = 10
+    wx = wxyz(N,0,1)[0].reshape(N+2,N+2,N+2)
+    wy = wxyz(N,0,1)[1].reshape(N+2,N+2,N+2)
+    wz = wxyz(N,0,1)[2].reshape(N+2,N+2,N+2)
 
-for i in range(len(wx)):
-    print(wz[i])
-    x = input('next: \n')
-"""
+    for i in range(len(wx)):
+        print(wz[i])
+        x = input('next: \n')
 
-# wx0 = np.zeros(12 ** 2)
-# wx15 = np.tile(
-#     np.append(np.append(np.zeros(12), np.tile(np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]), 5)),
-#               np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12))), 5)
-# wx610 = np.tile(
-#     np.append(np.append(np.zeros(12), np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5)),
-#               np.append(np.tile(np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12))), 5)
-# wx11 = np.zeros(12 ** 2)
-# wx = np.append(np.append(wx0, wx15), np.append(wx610, wx11))
-#
-# wy0 = np.zeros(12 ** 2)
-# wy15 = np.tile(
-#     np.append(np.append(np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12)),
-#               np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12))), 5)
-# wy610 = np.tile(
-#     np.append(np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12)),
-#               np.append(np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12))), 5)
-# wy11 = np.zeros(12 ** 2)
-# wy = np.append(np.append(wy0, wy15), np.append(wy610, wy11))
-#
-# wz04 = np.tile(
-#     np.append(np.append(np.zeros(12), np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5)),
-#               np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12))), 5)
-# wz5 = np.zeros(12 ** 2)
-# wz610 = np.tile(
-#     np.append(np.append(np.zeros(12), np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5)),
-#               np.append(np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12))), 5)
-# wz11 = np.zeros(12 ** 2)
-# wz = np.append(np.append(wz04, wz5), np.append(wz610, wz11))
+    # wx0 = np.zeros(12 ** 2)
+    # wx15 = np.tile(
+    #     np.append(np.append(np.zeros(12), np.tile(np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]), 5)),
+    #               np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12))), 5)
+    # wx610 = np.tile(
+    #     np.append(np.append(np.zeros(12), np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5)),
+    #               np.append(np.tile(np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12))), 5)
+    # wx11 = np.zeros(12 ** 2)
+    # wx = np.append(np.append(wx0, wx15), np.append(wx610, wx11))
+    #
+    # wy0 = np.zeros(12 ** 2)
+    # wy15 = np.tile(
+    #     np.append(np.append(np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12)),
+    #               np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12))), 5)
+    # wy610 = np.tile(
+    #     np.append(np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12)),
+    #               np.append(np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12))), 5)
+    # wy11 = np.zeros(12 ** 2)
+    # wy = np.append(np.append(wy0, wy15), np.append(wy610, wy11))
+    #
+    # wz04 = np.tile(
+    #     np.append(np.append(np.zeros(12), np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5)),
+    #               np.append(np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5), np.zeros(12))), 5)
+    # wz5 = np.zeros(12 ** 2)
+    # wz610 = np.tile(
+    #     np.append(np.append(np.zeros(12), np.tile(np.array([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0]), 5)),
+    #               np.append(np.tile(np.array([0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0]), 5), np.zeros(12))), 5)
+    # wz11 = np.zeros(12 ** 2)
+    # wz = np.append(np.append(wz04, wz5), np.append(wz610, wz11))

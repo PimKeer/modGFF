@@ -5,7 +5,7 @@ from numba import njit
 from clustertest import *
 
 Nk = 10000 # Amount of samples made for the average of gamma.
-Narr = np.array([64]) # N's to use.
+Narr = np.array([4,8,16,32,64]) # N's to use.
 parr = np.array([0.55,0.56,0.57,0.58]) # Cuts we try
 Np = len(parr) # Amount of cuts h we try.
 R = [] # List containing arrays of computed R_N values, one array for each N
@@ -92,22 +92,3 @@ for i in range(len(Narr)):
     plt.ylabel("$R_N$")
 plt.show()
 
-# x1 = Label(N,p).reshape(N**2)
-# for l in range(len(x1)):
-#     if x1[l] == 0.:
-#         x1[l] = int(N**2)
-#     else:
-#         x1[l] = int(x1[l] - 1)
-#
-# x2 = Label(2*N, p).reshape((2*N)**2)
-# for l in range(len(x2)):
-#     if x2[l] == 0.:
-#         x2[l] = int((2*N) ** 2)
-#     else:
-#         x2[l] = int(x2[l] - 1)
-
-# x1 = np.array(x1,dtype='int64')
-# x2 = np.array(x2,dtype='int64')
-
-# y1 = gamma(x1)
-# y2 = gamma(x2)

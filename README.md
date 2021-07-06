@@ -1,5 +1,5 @@
 # modGFF
-This is a very small overview of the main functions in this repository. For their workings, we would recommend to look at the thesis
+This is a very small overview of the main functions in this repository. For their workings, we would recommend to look at the thesis.
 
 In cg.py, the CG sampler functions for the GFF are written.
 

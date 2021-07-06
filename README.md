@@ -1,13 +1,14 @@
 # modGFF
+This is a very small overview of the main functions in this repository. An explanation on their workings can be found in the thesis.
 
 In cg.py, the CG sampler functions for the GFF are written.
 
 In cluster.py, the cluster finding algorithm can be found.
 
-In genGFFChafai.py and genGFFSheffield.py, the GFF generators using Chafai's and Sheffield's methods respectively are written. Note that Chafai is really slow the way it is now and so it isn't that useful.
+In genGFFChafai.py and genGFFSheffield.py, the GFF generators using Chafai's and Sheffield's methods respectively are written. 
 
-In gibbs.py, a Gibbs sampler for the GFF is given.
+The file conductances.py contains the function to generate a checkerboard pattern with n=5 (and N a multiple of 10).
 
 matrices.py contains all the used precision matrices (or rather matrix-vector product functions).
 
-In percolation.py, the Marinov-Lebowitz method is worked out.
+In the main_.py scripts, the simulations described in the paper can be found.

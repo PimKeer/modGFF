@@ -17,7 +17,7 @@ def union3(i, j, k, labels):
     labels[me] = mi
 
 def cluster(x, N):
-    """Hoshen-Kopelman routine to find the clusters for a given 0-1 array."""
+    """Hoshen-Kopelman routine to find the clusters for a given 0-1 array (in 3D)."""
     x = np.append(x, 0)
 
     labels = np.arange(N ** 3+1)
@@ -73,6 +73,7 @@ def cluster(x, N):
     return labels[:-1]
 
 def cluster2(x, N):
+    """Alternative Hoshen-Kopelman routine to find the clusters for a given 0-1 array (in 3D)."""
     x = np.append(x, 0)
 
     labels = np.arange(N ** 3 + 1)
@@ -135,6 +136,7 @@ def cluster2(x, N):
     return labels[:-1]
 
 def cluster2D(x, N):
+    """Hoshen-Kopelman routine to find the clusters for a given 0-1 array (in 2D)."""
     x = np.append(x, 0)
 
     labels = np.arange(N ** 2 + 1)
@@ -174,25 +176,34 @@ def cluster2D(x, N):
     # print(np.all(test==labels))
     return labels[:-1]
 
-def gamma(x):
-    """Computes the second moment of the cluster size for a given DGFF sample and threshold h."""
-    clusterarray = np.bincount(np.bincount(x)[:-1])
-    #print(np.bincount(x))
-    #print(clusterarray)
-    gamma = (clusterarray * np.arange(len(clusterarray),dtype='int64')**2).sum()
-    return gamma
+# TESTING AREA
 
 if __name__ == '__main__':
-    N = 8
-    p = 0.585
+
+    def gamma(x):
+        clusterarray = np.bincount(np.bincount(x)[:-1])
+        print(np.bincount(x))
+        print(np.bincount(np.bincount(x)))
+        print(clusterarray)
+        # print(np.bincount(x))
+        # print(clusterarray)
+        print(np.arange(len(clusterarray), dtype='int64'))
+        gamma = (clusterarray * np.arange(len(clusterarray), dtype='int64') ** 2).sum()
+        return gamma
+
+    np.random.seed(2)
+    N = 10
+    p = 0.5
     x = np.random.random(N**2)
     for i in range(N**2):
         if x[i] <= p:
             x[i] = 1
         else:
             x[i] = 0
-    y1 = cluster2D(x, N)
+    print(x)
+    y = cluster2D(x, N)
     print(x.reshape(N,N))
-    print(y1.reshape(N,N))
-    print(gamma(y1))
+    print(y.reshape(N,N))
+    print(y.reshape(N,N).T)
+    print(gamma(y))
     #y2 = cluster2(x, N)

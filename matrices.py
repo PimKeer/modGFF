@@ -452,9 +452,9 @@ def C2(x,wx,wy,wz,N):
     return y
 
 @njit
-def C(x, wx, wy, wz, N):
-    """Returns the matrix vector product Cx, where C is the zero boundary precision matrix."""
-    y = np.zeros((N+2) ** 3)
+def C(u, wx, wy, wz, N):
+    """Returns the matrix vector product Cu, where C is the zero boundary precision matrix."""
+    v = np.zeros((N+2) ** 3)
 
     for i in range((N+2) ** 3):
         if np.mod(i, N + 2) <= 0 \
@@ -463,20 +463,20 @@ def C(x, wx, wy, wz, N):
                 or np.mod(i, (N + 2) ** 2) >= (N + 2) ** 2 - (N + 2) \
                 or np.mod(i, (N + 2) ** 3) <= (N + 2) ** 2 - 1 \
                 or np.mod(i, (N + 2) ** 3) >= (N + 2) ** 3 - (N + 2) ** 2:
-            y[i] = x[i]
+            v[i] = u[i]
         else:
-            y[i] = x[i] * 1/6 * (wx[i] + wx[i-1] + wy[i] + wy[i - (N + 2)] + wz[i] + wz[i - (N + 2) ** 2])
+            v[i] = u[i] * 1/6 * (wx[i] + wx[i-1] + wy[i] + wy[i - (N + 2)] + wz[i] + wz[i - (N + 2) ** 2])
 
-            y[i] -= 1/6 * wx[i] * x[i + 1]
+            v[i] -= 1/6 * wx[i] * u[i + 1]
 
-            y[i] -= 1/6 * wx[i - 1] * x[i - 1]
+            v[i] -= 1/6 * wx[i - 1] * u[i - 1]
 
-            y[i] -= 1/6 * wy[i] * x[i + (N + 2)]
+            v[i] -= 1/6 * wy[i] * u[i + (N + 2)]
 
-            y[i] -= 1/6 * wy[i - (N + 2)] * x[i - (N + 2)]
+            v[i] -= 1/6 * wy[i - (N + 2)] * u[i - (N + 2)]
 
-            y[i] -= 1/6 * wz[i] * x[i + (N + 2) ** 2]
+            v[i] -= 1/6 * wz[i] * u[i + (N + 2) ** 2]
 
-            y[i] -= 1/6 * wz[i - (N + 2) ** 2] * x[i - (N + 2) ** 2]
+            v[i] -= 1/6 * wz[i - (N + 2) ** 2] * u[i - (N + 2) ** 2]
 
-    return y
+    return v
